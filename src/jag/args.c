@@ -23,6 +23,7 @@
 #include <string.h>
 #include <error.h>
 #include <sys/stat.h>
+#include <runite/file.h>
 
 #define GROUP_OPERATIONS 0
 
@@ -133,20 +134,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 		jag_args->mode = new_mode;
 	}
 	return 0;
-}
-
-/**
- * Cleanly joins two file paths together
- */
-static void file_path_join(char* path_a, char* path_b, char* out)
-{
-	sprintf(out, "%s/%s", path_a, path_b);
-	/* remove any duplicate separators */
-	for (char* p = out; *p != '\0'; p++) {
-		if (*p == '/' && *(p+1) == '/') {
-			strcpy(p, p+1);
-		}
-	}
 }
 
 /**
