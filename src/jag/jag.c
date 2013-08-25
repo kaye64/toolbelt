@@ -20,8 +20,11 @@
 #include <string.h>
 #include <err.h>
 #include <error.h>
+#include <errno.h>
 #include <sys/stat.h>
+#include <libgen.h>
 #include <runite/archive.h>
+#include <runite/file.h>
 
 #include <jag/args.h>
 
@@ -33,7 +36,8 @@ jag_args_t jag_args = {
 	.archive = ""
 };
 
-static void jag_list(char* archive);
+static void jag_extract(char* archive_path);
+static void jag_list(char* archive_path);
 static void jag_exit();
 
 /**
@@ -102,7 +106,7 @@ int main(int argc, char** argv)
 	/* do the work.. */
 	switch (jag_args.mode) {
 	case MODE_EXTRACT:
-
+		jag_extract(jag_args.archive);
 		break;
 	case MODE_LIST:
 		jag_list(jag_args.archive);
@@ -113,6 +117,65 @@ int main(int argc, char** argv)
 	}
 
 	return EXIT_SUCCESS;
+}
+
+/**
+ * Extracts the contents of an archive
+ */
+static void jag_extract(char* archive_path)
+{
+	/* create the destination directory */
+	char dir_name[255];
+	strcpy(dir_name, basename(archive_path));
+	if (strrchr(dir_name, '.') != NULL) { /* get rid of any extension */
+		char* idx = strrchr(dir_name, '.');
+		*idx = '\0';
+	}
+	int ret = mkdir(dir_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+	if (ret != 0 && errno != EEXIST) {
+		print_error("unable to create destination directory", EXIT_FAILURE);
+	}
+
+	/* decompress the archive */
+	file_t archive_file;
+	if (!file_read(&archive_file, archive_path)) {
+		printf("%s\n", archive_path);
+		print_error("unable to read archive", EXIT_FAILURE);
+	}
+	archive_t* archive = object_new(archive);
+	if (!archive_decompress(archive, &archive_file)) {
+		object_free(archive);
+		free(archive_file.data);
+		print_error("unable to decompress archive", EXIT_FAILURE);
+	}
+	free(archive_file.data);
+
+	/* extract the contents to disk */
+	archive_file_t* file;
+	list_for_each(&archive->files) {
+		list_for_get(file);
+		char file_name[255];
+		char file_path[255];
+		sprintf(file_name, "%x", file->identifier);
+		file_path_join(dir_name, file_name, file_path);
+		
+		/* write the file */
+		FILE* fd = fopen(file_path, "w+");
+		if (fd == NULL) {
+			char message[255];
+			sprintf(message, "%s: unable to open file for writing", file_path);
+			print_error(message, EXIT_FAILURE);
+		}
+		size_t written = fwrite(file->file.data, 1, file->file.length, fd);
+		fclose(fd);
+		if (written != file->file.length) {
+			char message[255];
+			sprintf(message, "%s: unable to write entire file", file_path);
+			print_error(message, EXIT_FAILURE);			
+		}
+	}
+
+	object_free(archive);	
 }
 
 /**
