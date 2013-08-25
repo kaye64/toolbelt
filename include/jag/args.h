@@ -38,6 +38,7 @@ struct jag_args {
 	int mode; /* one of MODE_{EXTRACT,LIST,CREATE} */
 	char archive[255];
 	list_t input_files;
+	bool verbose;
 };
 
 bool parse_args(jag_args_t* args, int argc, char** argv);

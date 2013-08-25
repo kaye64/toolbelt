@@ -33,7 +33,8 @@ extern char* program_invocation_name;
 
 jag_args_t jag_args = {
 	.mode = MODE_NONE,
-	.archive = ""
+	.archive = "",
+	.verbose = false
 };
 
 static void jag_extract(char* archive_path);
@@ -173,6 +174,10 @@ static void jag_extract(char* archive_path)
 			sprintf(message, "%s: unable to write entire file", file_path);
 			print_error(message, EXIT_FAILURE);			
 		}
+
+		if (jag_args.verbose) {
+			printf("Extracted %s\n", file_path);
+		}
 	}
 
 	object_free(archive);	
@@ -195,10 +200,18 @@ static void jag_list(char* archive_path)
 	}
 	free(archive_file.data);
 
+	if (jag_args.verbose) {
+		printf("Identifier\tSize\n");
+	}
+
 	archive_file_t* file;
 	list_for_each(&archive->files) {
 		list_for_get(file);
 		printf("0x%x\t%zu\n", file->identifier, file->file.length);
+	}
+	
+	if (jag_args.verbose) {
+		printf("%d files\n", archive->num_files);
 	}
 
 	object_free(archive);
