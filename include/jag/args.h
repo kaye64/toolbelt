@@ -39,6 +39,7 @@ struct jag_args {
 	char archive[255];
 	list_t input_files;
 	bool verbose;
+	bool decimal;
 };
 
 bool parse_args(jag_args_t* args, int argc, char** argv);
