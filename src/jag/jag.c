@@ -34,7 +34,8 @@ extern char* program_invocation_name;
 jag_args_t jag_args = {
 	.mode = MODE_NONE,
 	.archive = "",
-	.verbose = false
+	.verbose = false,
+	.decimal = false
 };
 
 static void jag_extract(char* archive_path);
@@ -157,7 +158,11 @@ static void jag_extract(char* archive_path)
 		list_for_get(file);
 		char file_name[255];
 		char file_path[255];
-		sprintf(file_name, "%x", file->identifier);
+		if (jag_args.decimal) {
+			sprintf(file_name, "%i", file->identifier);
+		} else {
+			sprintf(file_name, "%x", file->identifier);
+		}
 		file_path_join(dir_name, file_name, file_path);
 		
 		/* write the file */
@@ -207,7 +212,11 @@ static void jag_list(char* archive_path)
 	archive_file_t* file;
 	list_for_each(&archive->files) {
 		list_for_get(file);
-		printf("0x%x\t%zu\n", file->identifier, file->file.length);
+		if (jag_args.decimal) {
+			printf("%-11i\t%zu\n", file->identifier, file->file.length);
+		} else {
+			printf("%-11x\t%zu\n", file->identifier, file->file.length);
+		}
 	}
 	
 	if (jag_args.verbose) {

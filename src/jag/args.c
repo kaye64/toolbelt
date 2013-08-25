@@ -27,11 +27,13 @@
 
 #define GROUP_OTHERS -1
 #define GROUP_OPERATIONS 0
+#define GROUP_MODIFIERS 1
 
 #define OPTION_EXTRACT 'x'
 #define OPTION_LIST 'l'
 #define OPTION_CREATE 'c'
 #define OPTION_VERBOSE 'v'
+#define OPTION_DECIMAL 'd'
 
 static error_t parse_opt(int key, char *arg, struct argp_state *state);
 
@@ -49,6 +51,8 @@ const struct argp_option options[] = {
 	{ "extract", OPTION_EXTRACT, 0, 0, "Extract a given archive", GROUP_OPERATIONS },
 	{ "list", OPTION_LIST, 0, 0, "List the contents of a given archive", GROUP_OPERATIONS },
 	{ "create", OPTION_CREATE, 0, 0, "Create an archive from the given input files", GROUP_OPERATIONS },
+	{ 0, 0, 0, 0, "Operation modifiers:\n", GROUP_MODIFIERS },
+	{ "decimal", OPTION_DECIMAL, 0, 0, "Use decimal to represent identifiers", GROUP_MODIFIERS },
 	{ 0, 0, 0, 0, "Other options:", GROUP_OPERATIONS },
 	{ "verbose", OPTION_VERBOSE, 0, 0, "Enable verbose output", GROUP_OTHERS },
 	{ 0 }
@@ -119,6 +123,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 		break;
 	case OPTION_CREATE:
 		new_mode = MODE_CREATE;
+		break;
+	case OPTION_DECIMAL:
+		jag_args->decimal = true;
 		break;
 	case OPTION_VERBOSE:
 		jag_args->verbose = true;
