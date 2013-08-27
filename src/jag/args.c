@@ -26,14 +26,13 @@
 #include <runite/file.h>
 
 #define GROUP_OTHERS -1
-#define GROUP_OPERATIONS 0
-#define GROUP_MODIFIERS 1
 
 #define OPTION_EXTRACT 'x'
 #define OPTION_LIST 'l'
 #define OPTION_CREATE 'c'
 #define OPTION_VERBOSE 'v'
 #define OPTION_DECIMAL 'd'
+#define OPTION_HEXADECIMAL 'h'
 
 static error_t parse_opt(int key, char *arg, struct argp_state *state);
 
@@ -47,13 +46,14 @@ Examples:\n\
   jag -x archive.jag          # Extract all files from archive.jag.\n";
 
 const struct argp_option options[] = {
-	{ 0, 0, 0, 0, "Main operation mode:\n", GROUP_OPERATIONS },
-	{ "extract", OPTION_EXTRACT, 0, 0, "Extract a given archive", GROUP_OPERATIONS },
-	{ "list", OPTION_LIST, 0, 0, "List the contents of a given archive", GROUP_OPERATIONS },
-	{ "create", OPTION_CREATE, 0, 0, "Create an archive from the given input files", GROUP_OPERATIONS },
-	{ 0, 0, 0, 0, "Operation modifiers:\n", GROUP_MODIFIERS },
-	{ "decimal", OPTION_DECIMAL, 0, 0, "Use decimal to represent identifiers", GROUP_MODIFIERS },
-	{ 0, 0, 0, 0, "Other options:", GROUP_OPERATIONS },
+	{ 0, 0, 0, 0, "Main operation mode:\n" },
+	{ "extract", OPTION_EXTRACT, 0, 0, "Extract a given archive" },
+	{ "list", OPTION_LIST, 0, 0, "List the contents of a given archive" },
+	{ "create", OPTION_CREATE, 0, 0, "Create an archive from the given input files" },
+	{ 0, 0, 0, 0, "Operation modifiers:\n" },
+	{ "decimal", OPTION_DECIMAL, 0, 0, "Treat identifiers as decimal" },
+	{ "hex", OPTION_HEXADECIMAL, 0, 0, "Treat identifiers as hexadecimal" },
+	{ 0, 0, 0, 0, "Other options:", GROUP_OTHERS },
 	{ "verbose", OPTION_VERBOSE, 0, 0, "Enable verbose output", GROUP_OTHERS },
 	{ 0 }
 };
@@ -125,7 +125,10 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 		new_mode = MODE_CREATE;
 		break;
 	case OPTION_DECIMAL:
-		jag_args->decimal = true;
+		jag_args->ident_mode = IDENT_DECIMAL;
+		break;
+	case OPTION_HEXADECIMAL:
+		jag_args->ident_mode = IDENT_HEXADECIMAL;
 		break;
 	case OPTION_VERBOSE:
 		jag_args->verbose = true;

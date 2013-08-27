@@ -26,6 +26,10 @@
 #define MODE_LIST 2
 #define MODE_CREATE 3
 
+#define IDENT_HEXADECIMAL 0
+#define IDENT_DECIMAL 1
+#define IDENT_STRING 2
+
 typedef struct input_file input_file_t;
 typedef struct jag_args jag_args_t;
 
@@ -39,7 +43,7 @@ struct jag_args {
 	char archive[255];
 	list_t input_files;
 	bool verbose;
-	bool decimal;
+	int ident_mode;
 };
 
 bool parse_args(jag_args_t* args, int argc, char** argv);
