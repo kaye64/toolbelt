@@ -35,11 +35,12 @@ jag_args_t jag_args = {
 	.mode = MODE_NONE,
 	.archive = "",
 	.verbose = false,
-	.decimal = false
+	.ident_mode = IDENT_HEXADECIMAL
 };
 
 static void jag_extract(char* archive_path);
 static void jag_list(char* archive_path);
+static void jag_create(char* archive_path, list_t* input_files);
 static void jag_exit();
 
 /**
@@ -114,11 +115,23 @@ int main(int argc, char** argv)
 		jag_list(jag_args.archive);
 		break;
 	case MODE_CREATE:
-
+		jag_create(jag_args.archive, &jag_args.input_files);
 		break;
 	}
 
 	return EXIT_SUCCESS;
+}
+
+static void format_identifier(jhash_t identifier, char* out)
+{
+	switch (jag_args.ident_mode) {
+	case IDENT_DECIMAL:
+		sprintf(out, "%i", identifier);
+		break;
+	case IDENT_HEXADECIMAL:
+		sprintf(out, "%x", identifier);
+		break;
+	}
 }
 
 /**
@@ -158,11 +171,7 @@ static void jag_extract(char* archive_path)
 		list_for_get(file);
 		char file_name[255];
 		char file_path[255];
-		if (jag_args.decimal) {
-			sprintf(file_name, "%i", file->identifier);
-		} else {
-			sprintf(file_name, "%x", file->identifier);
-		}
+		format_identifier(file->identifier, file_name);
 		file_path_join(dir_name, file_name, file_path);
 		
 		/* write the file */
@@ -212,15 +221,89 @@ static void jag_list(char* archive_path)
 	archive_file_t* file;
 	list_for_each(&archive->files) {
 		list_for_get(file);
-		if (jag_args.decimal) {
-			printf("%-11i\t%zu\n", file->identifier, file->file.length);
-		} else {
-			printf("%-11x\t%zu\n", file->identifier, file->file.length);
-		}
+		char fmt_identifier[20];
+		format_identifier(file->identifier, fmt_identifier);
+		printf("%-11s\t%zu\n", fmt_identifier, file->file.length);
 	}
 	
 	if (jag_args.verbose) {
 		printf("%d files\n", archive->num_files);
+	}
+
+	object_free(archive);
+}
+
+/**
+ * Creates an archive from a list of input files
+ */
+static void jag_create(char* archive_path, list_t* input_files)
+{
+	archive_t* archive = object_new(archive);
+	input_file_t* in_file;
+	list_for_each(input_files) {
+		list_for_get(in_file);
+
+		/* figure out the identifier */
+		jhash_t identifier = 0;
+		char file_name[255];
+		strcpy(file_name, basename(in_file->path));
+		switch (jag_args.ident_mode) {
+		case IDENT_DECIMAL:
+			identifier = strtol(file_name, NULL, 10);
+			break;
+		case IDENT_HEXADECIMAL:
+			 identifier = strtol(file_name, NULL, 16);
+			 break;
+		 case IDENT_STRING:
+			 identifier = jagex_hash(file_name);
+			 break;
+		 }
+		 if (identifier == 0) {
+			 char message[100];
+			 sprintf(message, "%s: unable to determine identifier", in_file->path);
+			 print_error(message, EXIT_FAILURE);
+		 }
+
+		 /* read the file from disk */
+		 file_t file;
+		 if (!file_read(&file, in_file->path)) {
+			 char message[100];
+			 sprintf(message, "%s: unable to read", in_file->path);
+			 print_error(message, EXIT_FAILURE);
+		 }
+
+		 /* add the file to our archive */
+		 archive_file_t* archive_file = archive_add_file(archive, identifier, &file);
+		 if (archive_file == NULL) {
+			 char message[100];
+			 sprintf(message, "%s: unable add file", in_file->path); /* probably a name collision */
+			 print_error(message, EXIT_FAILURE);
+		 }
+
+		 if (jag_args.verbose) {
+			 char fmt_identifier[20];
+			 if (jag_args.ident_mode != IDENT_STRING) {
+				 format_identifier(identifier, fmt_identifier);
+			 } else {
+				 strcpy(fmt_identifier, file_name);
+			 }
+			 printf("Added %s as %s\n", file_name, fmt_identifier);
+		 }
+
+		 free(file.data);
+	}
+
+	/* do the compression */
+	file_t out_file;
+	if (!archive_compress(archive, &out_file, ARCHIVE_COMPRESS_FILE)) {
+		print_error("unable to compress archive", EXIT_FAILURE);
+	}
+
+	/* write the file out */
+	if (!file_write(&out_file, archive_path)) {
+		char message[100];
+		sprintf(message, "%s: unable to write archive", archive_path);
+		print_error(message, EXIT_FAILURE);
 	}
 
 	object_free(archive);
