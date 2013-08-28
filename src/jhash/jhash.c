@@ -38,6 +38,7 @@ jhash_args_t jhash_args = {
 	.ident_mode = HASH_HEXADECIMAL
 };
 
+static void lookup_table(const char* table_path, jhash_t hash, unsigned int heap_mb);
 static void generate_table(const char* table_path, char* charset, int max_length, unsigned int heap_mb);
 static void jhash_exit();
 
@@ -72,6 +73,7 @@ int main(int argc, char** argv) {
 		generate_table(jhash_args.table_path, jhash_args.charset, jhash_args.max_len, jhash_args.heap_mb);
 		break;
 	case MODE_CRACK:
+		lookup_table(jhash_args.table_path, jhash_args.target_hash, jhash_args.heap_mb);
 		break;
 	}
 
@@ -117,7 +119,6 @@ static void generate_table(const char* table_path, char* charset, int max_length
 				entries[cur_entry].string[i] = *buffer[i];
 			}
 			entries[cur_entry].hash = jagex_hash(entries[cur_entry].string);
-
 			/* If necessary flush to file, reset our buffer */
 			if (++cur_entry > num_entries) {
 				flush_table_entries(fd, entries, num_entries);
@@ -134,6 +135,54 @@ static void generate_table(const char* table_path, char* charset, int max_length
 
 	/* flush and exit */
 	flush_table_entries(fd, entries, cur_entry);
+
+	free(entries);
+	fclose(fd);
+}
+
+static void lookup_table(const char* table_path, jhash_t hash, unsigned int heap_mb)
+{
+	/* open the table path */
+	FILE* fd = fopen(table_path, "r");
+	if (!fd) {
+		char message[255];
+		sprintf(message, "%s: unable to open table for reading", table_path);
+		print_error(message, EXIT_FAILURE);
+	}
+
+	/* allocate memory to store the table in */
+	size_t num_entries = (size_t)(heap_mb*1024*1024)/(size_t)(sizeof(table_entry_t));
+	table_entry_t* entries = (table_entry_t*)malloc((size_t)sizeof(table_entry_t)*num_entries);
+	size_t entries_avail = 0;
+	fseek(fd, 0, SEEK_END);
+	size_t entries_total = ftell(fd)/sizeof(table_entry_t);
+	fseek(fd, 0, SEEK_SET);
+
+	bool success = false;
+	/* buffer, then search the table */
+	while (true) {
+		/* buffer, exiting on error/eof */
+		entries_avail = fread(entries, sizeof(table_entry_t), num_entries, fd);
+		if (entries_avail == 0) {
+			break;
+		}
+
+		/* lookup */
+		for (size_t i = 0; i < entries_avail; i++) {
+			if (entries[i].hash == hash) {
+				/* success! */
+				success = true;
+				printf("%x\t%s\n", hash, entries[i].string);
+				break;
+			}
+		}
+		if (success) {
+			break;
+		}
+	}
+	if (!success) {
+		fprintf(stderr, "unable to find result for %x (searched %zu)\n", hash, entries_total);
+	}
 
 	free(entries);
 	fclose(fd);
