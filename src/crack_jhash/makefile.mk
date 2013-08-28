@@ -1,8 +1,0 @@
-CRACK_JHASH_OUT = $(BIN_DIR)/crack_jhash
-CRACK_JHASH_OBJECTS = $(addprefix src/crack_jhash/,crack_jhash.o)
-
-TARGETS += $(CRACK_JHASH_OUT)
-OBJECTS += $(CRACK_JHASH_OBJECTS)
-
-$(CRACK_JHASH_OUT): $(RUNITE_PATH) $(CRACK_JHASH_OBJECTS)
-	gcc $(CFLAGS) -o $@ $(CRACK_JHASH_OBJECTS) $(LIBS) $(LIB_DIRS)

@@ -1,3 +1,3 @@
-SUBDIRS = src/jag src/crack_jhash
+SUBDIRS = src/jag src/jhash
 
 include $(addsuffix /makefile.mk, $(SUBDIRS))

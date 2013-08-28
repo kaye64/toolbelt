@@ -15,7 +15,7 @@
  *  along with Gem.  If not, see <http://www.gnu.org/licenses/\>.
  */
 
-#include <crack_jhash/args.h>
+#include <jhash/args.h>
 
 #include <stdio.h>
 #include <argp.h>
@@ -32,16 +32,20 @@
 #define OPTION_MAX_LEN 'l'
 #define OPTION_DECIMAL 'd'
 #define OPTION_HEXADECIMAL 'h'
+#define OPTION_HEAP_SIZE 'H'
 
 static error_t parse_opt(int key, char *arg, struct argp_state *state);
 
 extern char* program_name;
 
-static char const doc[] = "Brute forces a hash by means of a precalculated lookup table.\n
+char charset_std[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789\0"; /* i believe most (all?) production hashes are in this charset */
+char charset_extd[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789\0";
+
+static char const doc[] = "Brute forces a hash by means of a precalculated lookup table.\n\
 \n\
 Examples:\n\
-  crack_jhash -g lookup_table          # Generate a lookup table with standard options\n
-  crack_jhash -c lookup_table de3bdc91 # Attempt to crack a hash using a given lookup table\n
+  jhash -g lookup_table          # Generate a lookup table with standard options\n\
+  jhash -c lookup_table de3bdc91 # Attempt to crack a hash using a given lookup table\n\
 ";
 
 const struct argp_option options[] = {
@@ -53,6 +57,7 @@ const struct argp_option options[] = {
 	{ "hex", OPTION_HEXADECIMAL, 0, 0, "Treat identifiers as hexadecimal" },
 	{ "extended", OPTION_EXTD_CHARSET, 0, 0, "Use the extended char set to generate a lookup table" },
 	{ "max-length", OPTION_MAX_LEN, "length", 0, "Set the maximum hash string length" },
+	{ "heap-size", OPTION_HEAP_SIZE, "megabytes", 0, "Set the heap size in megabytes" },
 	{ 0, 0, 0, 0, "Other options:", GROUP_OTHERS },
 	{ "verbose", OPTION_VERBOSE, 0, 0, "Enable verbose output", GROUP_OTHERS },
 	{ 0 }
@@ -71,7 +76,7 @@ const struct argp parser = {
 /**
  * Parses argv into args
  */
-bool parse_args(crack_args_t* args, int argc, char** argv)
+bool parse_args(jhash_args_t* args, int argc, char** argv)
 {
 	int next_arg = 0;
 	error_t error = argp_parse(&parser, argc, argv, 0, &next_arg, args);
@@ -88,18 +93,26 @@ bool parse_args(crack_args_t* args, int argc, char** argv)
 		print_error("no lookup table specified", EXIT_FAILURE);
 	}
 
+	if (args->max_len > 16) {
+		print_error("maximum value of max length is 16", EXIT_FAILURE);
+	}
+
 	if (args->mode == MODE_CRACK) {
 		switch (args->ident_mode) {
-		case IDENT_DECIMAL:
+		case HASH_DECIMAL:
 			args->target_hash = strtol(args->hash_str, NULL, 10);
 			break;
-		case IDENT_HEXADECIMAL:
+		case HASH_HEXADECIMAL:
 			args->target_hash = strtol(args->hash_str, NULL, 16);
 			break;
 		}
 		if (args->target_hash == 0) {
 			print_error("invalid or missing hash", EXIT_FAILURE);
 		}
+	}
+
+	if (args->heap_mb == 0) {
+		print_error("invalid heap size specified", EXIT_FAILURE);
 	}
 
 	if (args->mode == MODE_GEN_TABLE && args->max_len == 0) {
@@ -140,7 +153,7 @@ void print_error(char* message, int status)
  */
 static error_t parse_opt(int key, char *arg, struct argp_state *state)
 {
-	crack_args_t* crack_args = (crack_args_t*)state->input;
+	jhash_args_t* jhash_args = (jhash_args_t*)state->input;
 	int new_mode = 0;
 	switch (key) {
 	case OPTION_GEN_TABLE:
@@ -150,36 +163,39 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 		new_mode = MODE_CRACK;
 		break;
 	case OPTION_DECIMAL:
-		crack_args->ident_mode = HASH_DECIMAL;
+		jhash_args->ident_mode = HASH_DECIMAL;
 		break;
 	case OPTION_HEXADECIMAL:
-		crack_args->ident_mode = HASH_HEXADECIMAL;
+		jhash_args->ident_mode = HASH_HEXADECIMAL;
 		break;
 	case OPTION_VERBOSE:
-		crack_args->verbose = true;
+		jhash_args->verbose = true;
 		break;
 	case OPTION_EXTD_CHARSET:
-		crack_args->charset = charset_extd;
+		jhash_args->charset = charset_extd;
 		break;
 	case OPTION_MAX_LEN:
-		crack_args->max_len = strtol(arg, NULL, 10);
+		jhash_args->max_len = strtol(arg, NULL, 10);
+		break;
+	case OPTION_HEAP_SIZE:
+		jhash_args->heap_mb = strtol(arg, NULL, 10);
 		break;
 	case ARGP_KEY_ARG:
 		if (state->arg_num == 0) { /* first arg = lookup table */
-			strcpy(crack_args->table_path, arg);
+			strcpy(jhash_args->table_path, arg);
 		} else if (state->arg_num == 1) { /* hash to crack */
-			strcpy(crack_args->hash_str, arg);
+			strcpy(jhash_args->hash_str, arg);
 		} else {
 			return ARGP_ERR_UNKNOWN;
 		}
 		break;
 	}
 	if (new_mode != 0) {
-		if (crack_args->mode != 0 && crack_args->mode != new_mode) {
+		if (jhash_args->mode != 0 && jhash_args->mode != new_mode) {
 			print_error("multiple modes specified", EXIT_FAILURE);
 			return 0;
 		}
-		crack_args->mode = new_mode;
+		jhash_args->mode = new_mode;
 	}
 	return 0;
 }

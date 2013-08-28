@@ -20,6 +20,7 @@
 
 #include <stdbool.h>
 #include <runite/util/list.h>
+#include <runite/hash.h>
 
 #define MODE_NONE 0
 #define MODE_GEN_TABLE 1
@@ -28,23 +29,21 @@
 #define HASH_HEXADECIMAL 0
 #define HASH_DECIMAL 1
 
-const char charset_std[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789"; /* i believe most (all?) production hashes are in this charset */
-const char charset_extd[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789";
+typedef struct jhash_args jhash_args_t;
 
-typedef struct crack_args crack_args_t;
-
-struct crack_args {
+struct jhash_args {
 	int mode; /* one of MODE_{GEN_TABLE,CRACK} */
 	char table_path[255];
 	char hash_str[32];
 	jhash_t target_hash;
-	const char* charset;
+	char* charset;
 	int max_len;
 	bool verbose;
 	int ident_mode;
+	unsigned int heap_mb;
 };
 
-bool parse_args(crack_args_t* args, int argc, char** argv);
+bool parse_args(jhash_args_t* args, int argc, char** argv);
 void print_help();
 void print_usage();
 void print_error(char* message, int status);
