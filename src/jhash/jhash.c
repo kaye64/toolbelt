@@ -29,7 +29,7 @@ extern char* program_invocation_name;
 jhash_args_t jhash_args = {
 	.mode = MODE_NONE,
 	.table_path = "",
-	.hash_str = "",
+	.target_string = "",
 	.target_hash = 0,
 	.charset = charset_std,
 	.max_len = 10,
@@ -38,6 +38,7 @@ jhash_args_t jhash_args = {
 	.ident_mode = HASH_HEXADECIMAL
 };
 
+static void hash(char* string);
 static void lookup_table(const char* table_path, jhash_t hash, unsigned int heap_mb);
 static void generate_table(const char* table_path, char* charset, int max_length, unsigned int heap_mb);
 static void jhash_exit();
@@ -69,6 +70,9 @@ int main(int argc, char** argv) {
 	}
 
 	switch (jhash_args.mode) {
+	case MODE_HASH:
+		hash(jhash_args.target_string);
+		break;
 	case MODE_GEN_TABLE:
 		generate_table(jhash_args.table_path, jhash_args.charset, jhash_args.max_len, jhash_args.heap_mb);
 		break;
@@ -88,6 +92,26 @@ struct table_entry {
 
 static void flush_table_entries(FILE* fd, table_entry_t* entries, int num) {
 	fwrite(entries, sizeof(table_entry_t), num, fd);
+}
+
+static void format_hash(jhash_t hash, char* out)
+{
+	switch (jhash_args.ident_mode) {
+	case HASH_DECIMAL:
+		sprintf(out, "%i", hash);
+		break;
+	case HASH_HEXADECIMAL:
+		sprintf(out, "%x", hash);
+		break;
+	}
+}
+
+static void hash(char* string)
+{
+	jhash_t hash = jagex_hash(string);
+	char hash_str[32];
+	format_hash(hash, hash_str);
+	printf("%s\t%s\n", hash_str, string);
 }
 
 static void generate_table(const char* table_path, char* charset, int max_length, unsigned int heap_mb) {
@@ -172,7 +196,9 @@ static void lookup_table(const char* table_path, jhash_t hash, unsigned int heap
 			if (entries[i].hash == hash) {
 				/* success! */
 				success = true;
-				printf("%x\t%s\n", hash, entries[i].string);
+				char hash_str[32];
+				format_hash(hash, hash_str);
+				printf("%s\t%s\n", hash_str, entries[i].string);
 				break;
 			}
 		}

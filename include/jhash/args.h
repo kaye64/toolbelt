@@ -23,8 +23,9 @@
 #include <runite/hash.h>
 
 #define MODE_NONE 0
-#define MODE_GEN_TABLE 1
-#define MODE_CRACK 2
+#define MODE_HASH 1
+#define MODE_GEN_TABLE 2
+#define MODE_CRACK 3
 
 #define HASH_HEXADECIMAL 0
 #define HASH_DECIMAL 1
@@ -34,7 +35,7 @@ typedef struct jhash_args jhash_args_t;
 struct jhash_args {
 	int mode; /* one of MODE_{GEN_TABLE,CRACK} */
 	char table_path[255];
-	char hash_str[32];
+	char target_string[32];
 	jhash_t target_hash;
 	char* charset;
 	int max_len;
