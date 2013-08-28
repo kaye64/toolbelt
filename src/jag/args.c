@@ -33,6 +33,7 @@
 #define OPTION_VERBOSE 'v'
 #define OPTION_DECIMAL 'd'
 #define OPTION_HEXADECIMAL 'h'
+#define OPTION_STRING 's'
 
 static error_t parse_opt(int key, char *arg, struct argp_state *state);
 
@@ -53,6 +54,7 @@ const struct argp_option options[] = {
 	{ 0, 0, 0, 0, "Operation modifiers:\n" },
 	{ "decimal", OPTION_DECIMAL, 0, 0, "Treat identifiers as decimal" },
 	{ "hex", OPTION_HEXADECIMAL, 0, 0, "Treat identifiers as hexadecimal" },
+	{ "string", OPTION_STRING, 0, 0, "Treat identifiers as hexadecimal" },
 	{ 0, 0, 0, 0, "Other options:", GROUP_OTHERS },
 	{ "verbose", OPTION_VERBOSE, 0, 0, "Enable verbose output", GROUP_OTHERS },
 	{ 0 }
@@ -130,6 +132,8 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 	case OPTION_HEXADECIMAL:
 		jag_args->ident_mode = IDENT_HEXADECIMAL;
 		break;
+	case OPTION_STRING:
+		jag_args->ident_mode = IDENT_STRING;
 	case OPTION_VERBOSE:
 		jag_args->verbose = true;
 		break;

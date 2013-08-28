@@ -128,6 +128,7 @@ static void format_identifier(jhash_t identifier, char* out)
 	case IDENT_DECIMAL:
 		sprintf(out, "%i", identifier);
 		break;
+	case IDENT_STRING:
 	case IDENT_HEXADECIMAL:
 		sprintf(out, "%x", identifier);
 		break;
@@ -260,7 +261,7 @@ static void jag_create(char* archive_path, list_t* input_files)
 		 }
 		 if (identifier == 0) {
 			 char message[100];
-			 sprintf(message, "%s: unable to determine identifier", in_file->path);
+			 sprintf(message, "%s: unable to determine identifier (perhaps you meant to specify --string?)", in_file->path);
 			 print_error(message, EXIT_FAILURE);
 		 }
 
@@ -276,17 +277,13 @@ static void jag_create(char* archive_path, list_t* input_files)
 		 archive_file_t* archive_file = archive_add_file(archive, identifier, &file);
 		 if (archive_file == NULL) {
 			 char message[100];
-			 sprintf(message, "%s: unable add file", in_file->path); /* probably a name collision */
+			 sprintf(message, "%s: unable to add file", in_file->path); /* probably a name collision */
 			 print_error(message, EXIT_FAILURE);
 		 }
 
 		 if (jag_args.verbose) {
 			 char fmt_identifier[20];
-			 if (jag_args.ident_mode != IDENT_STRING) {
-				 format_identifier(identifier, fmt_identifier);
-			 } else {
-				 strcpy(fmt_identifier, file_name);
-			 }
+			 format_identifier(identifier, fmt_identifier);
 			 printf("Added %s as %s\n", file_name, fmt_identifier);
 		 }
 
