@@ -90,10 +90,16 @@ struct table_entry {
 	char string[16];
 };
 
+/**
+ * Flush an array of table_entries to a file
+ */
 static void flush_table_entries(FILE* fd, table_entry_t* entries, int num) {
 	fwrite(entries, sizeof(table_entry_t), num, fd);
 }
 
+/**
+ * Format a jhash_t for output
+ */
 static void format_hash(jhash_t hash, char* out)
 {
 	switch (jhash_args.ident_mode) {
@@ -106,6 +112,9 @@ static void format_hash(jhash_t hash, char* out)
 	}
 }
 
+/**
+ * Calculate a hash for a string and output it
+ */
 static void hash(char* string)
 {
 	jhash_t hash = jagex_hash(string);
@@ -114,6 +123,9 @@ static void hash(char* string)
 	printf("%s\t%s\n", hash_str, string);
 }
 
+/**
+ * Generate a lookup table
+ */
 static void generate_table(const char* table_path, char* charset, int max_length, unsigned int heap_mb) {
 	/* open the table path */
 	FILE* fd = fopen(table_path, "w+");
@@ -164,6 +176,9 @@ static void generate_table(const char* table_path, char* charset, int max_length
 	fclose(fd);
 }
 
+/**
+ * Lookup a hash in a given table
+ */
 static void lookup_table(const char* table_path, jhash_t hash, unsigned int heap_mb)
 {
 	/* open the table path */
@@ -206,6 +221,7 @@ static void lookup_table(const char* table_path, jhash_t hash, unsigned int heap
 			break;
 		}
 	}
+
 	if (!success) {
 		fprintf(stderr, "unable to find result for %x (searched %zu)\n", hash, entries_total);
 	}
