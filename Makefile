@@ -13,8 +13,6 @@ include $(addsuffix /makefile.mk, $(SUBDIRS))
 
 all: $(TARGETS)
 
-$(TARGETS): $(BIN_DIR)
-
 $(BIN_DIR):
 	-mkdir -p $(BIN_DIR)
 
@@ -27,4 +25,5 @@ $(BIN_DIR):
 clean:
 	-rm -f $(TARGETS) $(OBJECTS)
 
-.PHONY: all clean
+.DEFAULT_GOAL = all
+.PHONY: all clean $(TARGETS)
