@@ -134,6 +134,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 		break;
 	case OPTION_STRING:
 		jag_args->ident_mode = IDENT_STRING;
+		break;
 	case OPTION_VERBOSE:
 		jag_args->verbose = true;
 		break;

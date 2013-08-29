@@ -128,7 +128,6 @@ static void format_identifier(jhash_t identifier, char* out)
 	case IDENT_DECIMAL:
 		sprintf(out, "%i", identifier);
 		break;
-	case IDENT_STRING:
 	case IDENT_HEXADECIMAL:
 		sprintf(out, "%x", identifier);
 		break;
@@ -253,41 +252,45 @@ static void jag_create(char* archive_path, list_t* input_files)
 			identifier = strtol(file_name, NULL, 10);
 			break;
 		case IDENT_HEXADECIMAL:
-			 identifier = strtol(file_name, NULL, 16);
-			 break;
-		 case IDENT_STRING:
-			 identifier = jagex_hash(file_name);
-			 break;
-		 }
-		 if (identifier == 0) {
-			 char message[100];
-			 sprintf(message, "%s: unable to determine identifier (perhaps you meant to specify --string?)", in_file->path);
-			 print_error(message, EXIT_FAILURE);
-		 }
+			identifier = strtol(file_name, NULL, 16);
+			break;
+		case IDENT_STRING:
+			identifier = jagex_hash(file_name);
+			break;
+		}
+		if (identifier == 0) {
+			char message[100];
+			sprintf(message, "%s: unable to determine identifier", in_file->path);
+			print_error(message, EXIT_FAILURE);
+		}
 
-		 /* read the file from disk */
-		 file_t file;
-		 if (!file_read(&file, in_file->path)) {
-			 char message[100];
-			 sprintf(message, "%s: unable to read", in_file->path);
-			 print_error(message, EXIT_FAILURE);
-		 }
+		/* read the file from disk */
+		file_t file;
+		if (!file_read(&file, in_file->path)) {
+			char message[100];
+			sprintf(message, "%s: unable to read", in_file->path);
+			print_error(message, EXIT_FAILURE);
+		}
 
-		 /* add the file to our archive */
-		 archive_file_t* archive_file = archive_add_file(archive, identifier, &file);
-		 if (archive_file == NULL) {
-			 char message[100];
-			 sprintf(message, "%s: unable to add file", in_file->path); /* probably a name collision */
-			 print_error(message, EXIT_FAILURE);
-		 }
+		/* add the file to our archive */
+		archive_file_t* archive_file = archive_add_file(archive, identifier, &file);
+		if (archive_file == NULL) {
+			char message[100];
+			sprintf(message, "%s: unable add file", in_file->path); /* probably a name collision */
+			print_error(message, EXIT_FAILURE);
+		}
 
-		 if (jag_args.verbose) {
-			 char fmt_identifier[20];
-			 format_identifier(identifier, fmt_identifier);
-			 printf("Added %s as %s\n", file_name, fmt_identifier);
-		 }
+		if (jag_args.verbose) {
+			char fmt_identifier[20];
+			if (jag_args.ident_mode != IDENT_STRING) {
+				format_identifier(identifier, fmt_identifier);
+			} else {
+				strcpy(fmt_identifier, file_name);
+			}
+			printf("Added %s as %s\n", file_name, fmt_identifier);
+		}
 
-		 free(file.data);
+		free(file.data);
 	}
 
 	/* do the compression */
