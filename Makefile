@@ -11,7 +11,7 @@ OBJECTS :=
 
 include $(addsuffix /makefile.mk, $(SUBDIRS))
 
-all: $(TARGETS)
+all: $(BIN_DIR) $(TARGETS)
 
 $(BIN_DIR):
 	-mkdir -p $(BIN_DIR)
